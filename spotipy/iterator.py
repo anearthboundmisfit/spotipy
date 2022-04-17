@@ -40,8 +40,7 @@ class SpotipyIterator:
         if result and 'total' not in result:
             if not self._collection:
                 self._collection, *_ = result.keys()
-        self._page = result
-        self._set_page_size_and_row()
+        self._prepare_next_page(result)
 
     def __iter__(self):
         return self
@@ -51,8 +50,7 @@ class SpotipyIterator:
             if self._page and 'next' in self._page and self._page['next']:
                 if self._search_endpoint_and_offset_limit_reached:
                     raise StopIteration
-                self._page = self._client.next(self._page)
-                self._set_page_size_and_row()
+                self._prepare_next_page(self._client.next(self._page))
                 if self._row >= self._page_size:
                     raise StopIteration
             else:
@@ -61,9 +59,11 @@ class SpotipyIterator:
         self._row = this_row + 1
         return self._page['items'][this_row]
     
-    def _set_page_size_and_row(self):
+    def _prepare_next_page(self, result):
         if self._collection:
-            self._page = self._page[self._collection]
+            self._page = result[self._collection]
+        else:
+            self._page = result
         if self._page and 'items' in self._page:
             self._page_size = len(self._page['items'])
         else:
