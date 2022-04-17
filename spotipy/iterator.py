@@ -37,10 +37,10 @@ class SpotipyIterator:
         result, *args = args
         if callable(result):
             result = result(self._client, *args, **kwargs)
-        self._page = result
-        if self._page and 'total' not in self._page:
+        if result and 'total' not in result:
             if not self._collection:
-                self._collection, *_ = self._page.keys()
+                self._collection, *_ = result.keys()
+        self._page = result
         self._set_page_size_and_row()
 
     def __iter__(self):
