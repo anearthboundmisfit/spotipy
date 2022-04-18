@@ -16,7 +16,7 @@ class SpotipyIterator:
     INFLECT = inflect.engine()
     SEARCH_REGEXP = re.compile('^https?://[^/]+/v1/search\\b')
     SEARCH_MAX_OFFSET = 1000
- 
+
     def __init__(self, *args, **kwargs):
         self._client = None
         if kwargs:
@@ -48,8 +48,9 @@ class SpotipyIterator:
     def __next__(self):
         if self._row >= self._page_size:
             if self._page and 'next' in self._page and self._page['next']:
-                if self._search_endpoint_and_offset_limit_reached:
-                    raise StopIteration
+                if self.SEARCH_REGEXP.match(self._page['next']):
+                    if self._page['offset'] + self._page['limit'] >= self.SEARCH_MAX_OFFSET:
+                        raise StopIteration
                 self._prepare_next_page(self._client.next(self._page))
                 if self._row >= self._page_size:
                     raise StopIteration
@@ -58,21 +59,14 @@ class SpotipyIterator:
         this_row = self._row
         self._row = this_row + 1
         return self._page['items'][this_row]
-    
+
     def _prepare_next_page(self, result):
         if self._collection:
             self._page = result[self._collection]
         else:
             self._page = result
+        self._page_size = 0
         if self._page and 'items' in self._page:
             self._page_size = len(self._page['items'])
-        else:
-            self._page_size = 0
         self._row = 0
         return self
-
-    def _search_endpoint_and_offset_limit_reached(self):
-        if self.SEARCH_REGEXP.match(self._page['next']):
-            if self._page['offset'] + self._page['limit'] >= self.SEARCH_MAX_OFFSET:
-                return True
-        return False
